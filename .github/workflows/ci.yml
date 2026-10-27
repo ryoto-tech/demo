@@ -1,0 +1,85 @@
+name: CI
+
+# 1 回の push で build → 単体 → 分離 → E2E を全部回す（CLAUDE.md §7.1）。
+# 同じブランチで新しい push が来たら、古い実行は止める。
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: build（型チェック・lint）
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: 型チェック（アプリ）
+        run: npx tsc --noEmit -p apps/web
+      - name: 型チェック（テスト側）
+        run: npx tsc -p tsconfig.tests.json
+      - run: npm run lint
+
+  unit:
+    name: 単体・static
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm test
+
+  isolation:
+    name: 分離（実 DB）
+    needs: unit
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      # ubuntu-latest には Docker が入っているので Testcontainers がそのまま動く。
+      - run: npm run test:isolation
+
+  e2e:
+    name: E2E
+    needs: isolation
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: Playwright のブラウザを入れる
+        if: hashFiles('playwright.config.ts') != ''
+        run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+      - uses: actions/upload-artifact@v4
+        if: failure() && hashFiles('playwright.config.ts') != ''
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7

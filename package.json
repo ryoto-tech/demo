@@ -1,0 +1,25 @@
+{
+  "name": "demo",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.12"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p apps/web && tsc -p tsconfig.tests.json",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "test:static": "vitest run tests/static",
+    "test:isolation": "vitest run -c vitest.isolation.config.ts",
+    "test:e2e": "node -e \"require('fs').existsSync('playwright.config.ts') ? require('child_process').execSync('npx playwright test',{stdio:'inherit'}) : console.log('E2E: playwright.config.ts が無いので飛ばします')\"",
+    "check": "npm run typecheck && npm run lint && npm test"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.5",
+    "@types/node": "^22.20.5",
+    "eslint": "^9.39.5",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.72.1",
+    "vitest": "^4.1.12"
+  }
+}

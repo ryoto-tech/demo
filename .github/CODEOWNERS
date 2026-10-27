@@ -1,0 +1,6 @@
+# CLAUDE.md の変更は人間 2 人の承認を残す（CLAUDE.md §7.6）。
+# GitHub のユーザー名が決まったら、下の行の先頭の # を外して書き換える。
+# あわせて GitHub の Settings → Branches で main を保護し、
+# 「Require review from Code Owners」と「承認 2 件」を有効にする。
+#
+# /CLAUDE.md  @<承認者1>  @<承認者2>
